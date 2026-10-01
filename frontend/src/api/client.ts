@@ -1,10 +1,23 @@
-/** 统一请求封装：拼后端地址、抛网络错误、给页脚留一句可读的说明。 */
+/** 统一请求封装：拼后端地址、带上当前操作人、抛网络错误、给页脚留一句可读的说明。 */
 const API_BASE = import.meta.env.VITE_API_BASE ?? ''
+const USER_STORAGE_KEY = 'om.currentUserId'
+
+export function currentUserId(): string {
+  return localStorage.getItem(USER_STORAGE_KEY) ?? 'u0'
+}
+
+export function setCurrentUserId(id: string) {
+  localStorage.setItem(USER_STORAGE_KEY, id)
+}
+
+function authHeaders(init?: RequestInit): HeadersInit {
+  return { 'Content-Type': 'application/json', 'X-User-Id': currentUserId(), ...(init?.headers ?? {}) }
+}
 
 export function request(path: string, init?: RequestInit): Promise<Response> {
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`
   return fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(init),
     ...init,
   }).catch((error: unknown) => {
     const detail = error instanceof Error ? error.message : '请求未送达'

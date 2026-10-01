@@ -8,6 +8,9 @@ from typing import Any
 
 from app.seed import SEED_ROWS
 
+# 仅供业务模块内部使用的台账/账号表，不进入运营概览的模块清单。
+INTERNAL_MODULES = {"gearbox_oil_ledger", "users"}
+
 
 class Store:
     def __init__(self) -> None:
@@ -16,6 +19,9 @@ class Store:
         }
 
     def module_names(self) -> list[str]:
+        return sorted(name for name in self._tables if name not in INTERNAL_MODULES)
+
+    def all_module_names(self) -> list[str]:
         return sorted(self._tables)
 
     def rows(self, module: str) -> list[dict[str, Any]]:

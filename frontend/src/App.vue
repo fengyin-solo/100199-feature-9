@@ -11,7 +11,17 @@
     <main class="app-main">
       <header class="app-head">
         <span class="head-desc">面向风电场站台账、机组部件监测、变桨偏航调试、缺陷处置与上网电量结算的一体化运维后台。</span>
-        <span class="head-user">当前值班：{{ store.operator }} · {{ store.shiftLabel }}</span>
+        <span class="head-user">
+          当前值班：{{ store.operator }} · {{ store.roleLabel }} · {{ store.shiftLabel }}
+          <label class="identity-switch">
+            切换身份
+            <select :value="store.currentId" @change="switchIdentity($event)">
+              <option v-for="user in store.users" :key="user.id" :value="user.id">
+                {{ user.name }}（{{ user.role === 'admin' ? '值班管理员' : `${user.team}保养人员` }}）
+              </option>
+            </select>
+          </label>
+        </span>
       </header>
       <RouterView />
     </main>
@@ -19,9 +29,24 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
+
 import { useSessionStore } from '@/stores/session'
 
 const store = useSessionStore()
 
 const navItems = [{ label: "运营概览", path: "/" }, { label: "风电场站", path: "/windfarm" }, { label: "风电机组", path: "/turbine" }, { label: "叶片", path: "/blade" }, { label: "齿轮箱", path: "/gearbox" }, { label: "发电机", path: "/generator" }, { label: "变桨系统", path: "/pitch" }, { label: "偏航系统", path: "/yaw" }, { label: "测风塔", path: "/metmast" }, { label: "集电线路", path: "/collector" }, { label: "升压站", path: "/substation" }, { label: "功率预测", path: "/forecast" }, { label: "振动监测", path: "/vibration" }, { label: "缺陷登记", path: "/defect" }, { label: "检修任务", path: "/maintjob" }, { label: "备件领用", path: "/spare" }, { label: "巡视检查", path: "/patrol" }, { label: "验收确认", path: "/accept" }, { label: "电量结算", path: "/settle" }]
+
+onMounted(() => {
+  void store.loadUsers()
+})
+
+function switchIdentity(event: Event) {
+  store.switchUser((event.target as HTMLSelectElement).value)
+}
 </script>
+
+<style scoped>
+.identity-switch { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; }
+.identity-switch select { padding: 2px 6px; border-radius: 6px; border: 1px solid var(--border); }
+</style>

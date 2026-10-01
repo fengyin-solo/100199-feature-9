@@ -28,14 +28,28 @@ class Store:
         return None
 
     def overview(self) -> dict[str, object]:
+        # 齿轮箱的待处理/异常口径在服务层（换油周期到期判定），概览与换油台账必须取同一份，
+        # 这里延迟导入避免 store <-> services 循环依赖。
+        from app.services.gearbox import MODULE as GEARBOX_MODULE, GearboxService
+
+        gearbox_service = GearboxService()
         modules: list[dict[str, object]] = []
         for name in self.module_names():
+            if name in ("gearbox_oil_records", "gearbox_oil_alerts"):
+                # 台账/异常登记是齿轮箱的子表，不单独作为业务模块上概览。
+                continue
             rows = self.rows(name)
+            if name == GEARBOX_MODULE:
+                pending = gearbox_service.count_pending()
+                abnormal = sum(1 for row in rows if gearbox_service.is_abnormal(row))
+            else:
+                pending = sum(1 for row in rows if row.get("pending"))
+                abnormal = sum(1 for row in rows if row.get("abnormal"))
             modules.append({
                 "name": name,
                 "created": len(rows),
-                "pending": sum(1 for row in rows if row.get("pending")),
-                "abnormal": sum(1 for row in rows if row.get("abnormal")),
+                "pending": pending,
+                "abnormal": abnormal,
             })
         cards = [
             {"label": "业务模块", "value": len(modules)},
